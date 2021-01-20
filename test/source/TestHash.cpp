@@ -54,6 +54,18 @@ struct Struct {
 };
 
 
+// For regression code below.
+template<class HashType>
+struct HashTest
+{
+	template<typename... Args>
+	auto operator()(Args&&... args)
+	{
+		return eastl::hash<HashType>{}(eastl::forward<Args>(args)...);
+	}
+};
+
+
 
 // What we are doing here is creating a special case of a hashtable where the key compare
 // function is not the same as the value operator==. 99% of the time when you create a 
@@ -704,25 +716,23 @@ int TestHash()
 		//            const Predicate& predicate = Predicate(), const allocator_type& allocator = EASTL_HASH_SET_DEFAULT_ALLOCATOR)
 		// this_type& operator=(std::initializer_list<value_type> ilist);
 		// void insert(std::initializer_list<value_type> ilist);
-		#if !defined(EA_COMPILER_NO_INITIALIZER_LISTS)
-			hash_set<int> intHashSet = { 12, 13, 14 };
-			EATEST_VERIFY(intHashSet.size() == 3);
-			EATEST_VERIFY(intHashSet.find(12) != intHashSet.end());
-			EATEST_VERIFY(intHashSet.find(13) != intHashSet.end());
-			EATEST_VERIFY(intHashSet.find(14) != intHashSet.end());
+		hash_set<int> intHashSet = { 12, 13, 14 };
+		EATEST_VERIFY(intHashSet.size() == 3);
+		EATEST_VERIFY(intHashSet.find(12) != intHashSet.end());
+		EATEST_VERIFY(intHashSet.find(13) != intHashSet.end());
+		EATEST_VERIFY(intHashSet.find(14) != intHashSet.end());
 
-			intHashSet = { 22, 23, 24 };
-			EATEST_VERIFY(intHashSet.size() == 3);
-			EATEST_VERIFY(intHashSet.find(22) != intHashSet.end());
-			EATEST_VERIFY(intHashSet.find(23) != intHashSet.end());
-			EATEST_VERIFY(intHashSet.find(24) != intHashSet.end());
+		intHashSet = { 22, 23, 24 };
+		EATEST_VERIFY(intHashSet.size() == 3);
+		EATEST_VERIFY(intHashSet.find(22) != intHashSet.end());
+		EATEST_VERIFY(intHashSet.find(23) != intHashSet.end());
+		EATEST_VERIFY(intHashSet.find(24) != intHashSet.end());
 
-			intHashSet.insert({ 42, 43, 44 });
-			EATEST_VERIFY(intHashSet.size() == 6);
-			EATEST_VERIFY(intHashSet.find(42) != intHashSet.end());
-			EATEST_VERIFY(intHashSet.find(43) != intHashSet.end());
-			EATEST_VERIFY(intHashSet.find(44) != intHashSet.end());
-		#endif
+		intHashSet.insert({ 42, 43, 44 });
+		EATEST_VERIFY(intHashSet.size() == 6);
+		EATEST_VERIFY(intHashSet.find(42) != intHashSet.end());
+		EATEST_VERIFY(intHashSet.find(43) != intHashSet.end());
+		EATEST_VERIFY(intHashSet.find(44) != intHashSet.end());
 	}
 
 	{
@@ -732,6 +742,21 @@ int TestHash()
 		// size_type       erase(const key_type&);
 		// To do.
 	}
+
+
+	{ // hash_set erase_if
+		hash_set<int> m = {0, 1, 2, 3, 4};
+		eastl::erase_if(m, [](auto i) { return i % 2 == 0; });
+		VERIFY((m == hash_set<int>{1, 3}));
+	}
+
+	{ // hash_multiset erase_if
+		hash_multiset<int> m = {0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 4};
+		eastl::erase_if(m, [](auto i) { return i % 2 == 0; });
+		VERIFY((m == hash_multiset<int>{1, 1, 1, 3}));
+	}
+
+
 
 
 
@@ -916,6 +941,20 @@ int TestHash()
 		}
 	}
 
+	{ // hash_map erase_if
+		hash_map<int, int> m = {{0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 4}};
+		eastl::erase_if(m, [](auto p) { return p.first % 2 == 0; });
+		VERIFY((m == hash_map<int, int>{{1, 1}, {3, 3}}));
+	}
+
+	{ // hash_multimap erase_if
+		hash_multimap<int, int> m = {{0, 0}, {0, 0}, {0, 0}, {0, 0}, {1, 1}, {2, 2},
+		                             {2, 2}, {2, 2}, {2, 2}, {3, 3}, {3, 3}, {4, 4}};
+		eastl::erase_if(m, [](auto p) { return p.first % 2 == 0; });
+		VERIFY((m == hash_multimap<int, int>{{1, 1}, {3, 3}, {3, 3}}));
+	}
+
+
 
 	{   
 		// template <typename U, typename UHash, typename BinaryPredicate>
@@ -950,7 +989,7 @@ int TestHash()
 			else
 				EATEST_VERIFY(it == hashSet.end());
 
-			it = hashSet.find_as(pString, hash<char*>(), equal_to_2<string, const char*>());
+			it = hashSet.find_as(pString, hash<const char*>(), equal_to_2<string, const char*>());
 			if(i < kCount)
 				EATEST_VERIFY(it != hashSet.end());
 			else
@@ -1329,18 +1368,18 @@ int TestHash()
 		struct Key
 		{
 			Key() {}
-			Key(Key&& o) {}
-			Key(const Key&& o) {}
-			bool operator==(const Key& other) const { return true; }
+			Key(Key&&) {}
+			Key(const Key&&) {}
+			bool operator==(const Key&) const { return true; }
 
 		private:
-			Key(const Key& o) {}
+			Key(const Key&) {}
 		};
 		EA_RESTORE_VC_WARNING()
 
 		struct Hash
 		{
-			std::size_t operator()(const Key& k) const { return 0; }
+			std::size_t operator()(const Key&) const { return 0; }
 		};
 
 		Key key1, key2;
@@ -1398,7 +1437,6 @@ int TestHash()
 
 	
 	{
-
 		struct name_equals
 		{
 			bool operator()(const eastl::pair<int, const char*>& a, const eastl::pair<int, const char*>& b) const
@@ -1420,6 +1458,25 @@ int TestHash()
 			VERIFY(isFound);
 		}
 	}
+
+	{ // User reported regression for code changes limiting hash code generated for non-arithmetic types.
+	    { VERIFY(HashTest<char>{}('a') == size_t('a')); }
+	    { VERIFY(HashTest<int>{}(42) == 42); }
+	    { VERIFY(HashTest<unsigned>{}(42) == 42); }
+	    { VERIFY(HashTest<signed>{}(42) == 42); }
+	    { VERIFY(HashTest<short>{}(short(42)) == 42); }
+	    { VERIFY(HashTest<unsigned short>{}((unsigned short)42) == 42); }
+	    { VERIFY(HashTest<int>{}(42) == 42); }
+	    { VERIFY(HashTest<unsigned int>{}(42) == 42); }
+	    { VERIFY(HashTest<long int>{}(42) == 42); }
+	    { VERIFY(HashTest<unsigned long int>{}(42) == 42); }
+	    { VERIFY(HashTest<long long int>{}(42) == 42); }
+	    { VERIFY(HashTest<unsigned long long int>{}(42) == 42); }
+
+	#if defined(EA_HAVE_INT128) && EA_HAVE_INT128
+	    { VERIFY(HashTest<uint128_t>{}(UINT128_C(0, 42)) == 42); }
+	#endif
+    }
 
 	return nErrorCount;
 }

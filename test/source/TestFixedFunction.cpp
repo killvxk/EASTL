@@ -4,8 +4,12 @@
 
 #include <EABase/eabase.h>
 #include <EAAssert/eaassert.h>
-#include "EASTLTest.h"
+
+// Included prior to EASTLTest.h to guard against the following bug resurfacing:
+// https://github.com/electronicarts/EASTL/issues/275
 #include <EASTL/fixed_function.h>
+
+#include "EASTLTest.h"
 #include <EASTL/numeric.h>
 
 EA_DISABLE_ALL_VC_WARNINGS()
@@ -539,6 +543,50 @@ int TestFixedFunctionBasic()
 		nErrorCount += TestFixedFunctionCaptureless<ff_64>();
 		nErrorCount += TestFixedFunctionCaptureless<ff_128>();
 		nErrorCount += TestFixedFunctionCaptureless<ff_4096>();
+	}
+
+	// Verify conversions to fixed_function<N> for sizes greater or equal to the source size.
+	{
+		uint32_t v0 = 130480, v1 = 936780302;
+		const uint32_t result = v0 + v1;
+
+		eastl::fixed_function<8, uint32_t(void)> ff8 = [v0, v1]
+			{ return v0 + v1; };
+
+		{
+			eastl::fixed_function<16, uint32_t(void)> ff16(ff8);
+			VERIFY(result == ff16());
+		}
+
+		{
+			eastl::fixed_function<16, uint32_t(void)> ff16 = ff8;
+			VERIFY(result == ff16());
+		}
+
+		{
+			eastl::fixed_function<16, uint32_t(void)> ff16; 
+			ff16 = ff8;
+			VERIFY(result == ff16());
+		}
+
+		{
+			auto ff8Copy = ff8;
+			eastl::fixed_function<16, uint32_t(void)> ff16(eastl::move(ff8Copy));
+			VERIFY(result == ff16());
+		}
+
+		{
+			auto ff8Copy = ff8;
+			eastl::fixed_function<16, uint32_t(void)> ff16 = eastl::move(ff8Copy);
+			VERIFY(result == ff16());
+		}
+
+		{
+			auto ff8Copy = ff8;
+			eastl::fixed_function<16, uint32_t(void)> ff16;
+			ff16 = eastl::move(ff8Copy);
+			VERIFY(result == ff16());
+		}
 	}
 
 	return nErrorCount;

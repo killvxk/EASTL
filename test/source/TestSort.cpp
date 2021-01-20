@@ -17,6 +17,7 @@
 #include <EASTL/sort.h>
 #include <EASTL/bonus/sort_extra.h>
 #include <EASTL/vector.h>
+#include <EASTL/list.h>
 #include <EASTL/deque.h>
 #include <EASTL/algorithm.h>
 #include <EASTL/allocator.h>
@@ -286,7 +287,7 @@ int TestSort()
 
 				intArray = intArraySaved;
 				vector<int64_t> buffer(intArray.size());
-				merge_sort_buffer(intArray.begin(), intArray.end(), &buffer[0]);
+				merge_sort_buffer(intArray.begin(), intArray.end(), buffer.data());
 				EATEST_VERIFY(is_sorted(intArray.begin(), intArray.end()));
 				EATEST_VERIFY(eastl::accumulate(begin(intArraySaved), end(intArraySaved), int64_t(0)) == expectedSum);
 
@@ -302,6 +303,34 @@ int TestSort()
 				EATEST_VERIFY(eastl::accumulate(begin(intArraySaved), end(intArraySaved), int64_t(0)) == expectedSum);
 			}
 		}
+	}
+
+	// Test tim sort with a specific array size and seed that caused a crash 
+	{
+		vector<int64_t> intArray;
+		int i = 1000000;
+		{
+			EASTLTest_Rand testRng(232526);
+
+			for (int n = 0; n < i; n++)
+			{
+				intArray.push_back(testRng.Rand());
+			}
+			vector<int64_t> buffer(intArray.size() / 2);
+			tim_sort_buffer(intArray.begin(), intArray.end(), buffer.data());
+			EATEST_VERIFY(is_sorted(intArray.begin(), intArray.end()));
+		}
+	}
+
+	// Test insertion_sort() does not invalidate a BidirectionalIterator by doing --BidirectionalIterator.begin()
+	{
+		// Test Passes if the Test doesn't crash
+		eastl::deque<int> deque;
+		deque.push_back(1);
+
+		insertion_sort(deque.begin(), deque.end());
+
+		insertion_sort(deque.begin(), deque.end(), eastl::less<int>{});
 	}
 
 
@@ -821,6 +850,41 @@ int TestSort()
 		EATEST_VERIFY(is_sorted(floatArray.begin(), floatArray.end(), SafeFloatCompare()));
 	}
 
+	{
+		auto test_stable_sort = [&](auto testArray, size_t count)
+		{
+			auto isEven = [](auto val) { return (val % 2) == 0; };
+			auto isOdd  = [](auto val) { return (val % 2) != 0; };
+
+			for (size_t i = 0; i < count; i++)
+				testArray.push_back((uint16_t)rng.Rand());
+
+			vector<uint16_t> evenArray;
+			vector<uint16_t> oddArray;
+
+			eastl::copy_if(testArray.begin(), testArray.end(), eastl::back_inserter(evenArray), isEven);
+			eastl::copy_if(testArray.begin(), testArray.end(), eastl::back_inserter(oddArray), isOdd);
+
+			const auto boundary = eastl::stable_partition(testArray.begin(), testArray.end(), isEven);
+
+			const auto evenCount = eastl::distance(testArray.begin(), boundary);
+			const auto oddCount = eastl::distance(boundary, testArray.end());
+
+			const auto evenExpectedCount = (ptrdiff_t)evenArray.size();
+			const auto oddExpectedCount = (ptrdiff_t)oddArray.size();
+
+			EATEST_VERIFY(evenCount == evenExpectedCount);
+			EATEST_VERIFY(oddCount == oddExpectedCount);
+			EATEST_VERIFY(eastl::equal(testArray.begin(), boundary, evenArray.begin()));
+			EATEST_VERIFY(eastl::equal(boundary, testArray.end(), oddArray.begin()));
+		};
+
+		test_stable_sort(vector<uint16_t>(), 1000); // Test stable_partition
+		test_stable_sort(vector<uint16_t>(), 0);	// Test stable_partition on empty container
+		test_stable_sort(vector<uint16_t>(), 1);	// Test stable_partition on container of one element
+		test_stable_sort(vector<uint16_t>(), 2);	// Test stable_partition on container of two element
+		test_stable_sort(list<uint16_t>(),   0);	// Test stable_partition on bidirectional iterator (not random access)
+	}
 
 	#if 0 // Disabled because it takes a long time and thus far seems to show no bug in quick_sort.
 	{

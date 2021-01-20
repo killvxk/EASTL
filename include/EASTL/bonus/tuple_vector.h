@@ -157,12 +157,15 @@ struct TupleRecurser<>
 
 	static EA_CONSTEXPR size_type GetTotalAllocationSize(size_type capacity, size_type offset)
 	{
+		EA_UNUSED(capacity);
 		return offset;
 	}
 
 	template<typename Allocator, size_type I, typename Indices, typename... VecTypes>
 	static pair<void*, size_type> DoAllocate(TupleVecImpl<Allocator, Indices, VecTypes...> &vec, void** ppNewLeaf, size_type capacity, size_type offset)
 	{
+		EA_UNUSED(ppNewLeaf);
+
 		// If n is zero, then we allocate no memory and just return NULL. 
 		// This is fine, as our default ctor initializes with NULL pointers. 
 		size_type alignment = TupleRecurser<VecTypes...>::GetTotalAlignment();
@@ -180,7 +183,12 @@ struct TupleRecurser<>
 
 	template<typename TupleVecImplType, size_type I>
 	static void SetNewData(TupleVecImplType &vec, void* pData, size_type capacity, size_type offset) 
-	{ }
+	{ 
+		EA_UNUSED(vec);
+		EA_UNUSED(pData);
+		EA_UNUSED(capacity);
+		EA_UNUSED(offset);
+	}
 };
 
 template <typename T, typename... Ts>
@@ -653,7 +661,7 @@ public:
 				size_type oldNumElements = mNumElements;
 				
 				DoCopyFromTupleArray(begin(), begin() + oldNumElements, first);
-				DoUninitializedCopyFromTupleArray(begin() + oldNumElements, begin() + newNumElements, first);
+				DoUninitializedCopyFromTupleArray(begin() + oldNumElements, begin() + newNumElements, first + oldNumElements);
 				mNumElements = newNumElements;
 			}
 			else // else 0 <= n <= mNumElements
@@ -720,7 +728,7 @@ public:
 		{
 			if (newNumElements > oldNumCapacity)
 			{
-				const size_type newCapacity = max(GetNewCapacity(oldNumCapacity), newNumElements);
+				const size_type newCapacity = eastl::max(GetNewCapacity(oldNumCapacity), newNumElements);
 
 				void* ppNewLeaf[sizeof...(Ts)];
 				pair<void*, size_type> allocation =	TupleRecurser<Ts...>::template DoAllocate<allocator_type, 0, index_sequence_type, Ts...>(
@@ -766,7 +774,7 @@ public:
 		{
 			if (newNumElements > oldNumCapacity)
 			{
-				const size_type newCapacity = max(GetNewCapacity(oldNumCapacity), newNumElements);
+				const size_type newCapacity = eastl::max(GetNewCapacity(oldNumCapacity), newNumElements);
 
 				void* ppNewLeaf[sizeof...(Ts)];
 				pair<void*, size_type> allocation = TupleRecurser<Ts...>::template DoAllocate<allocator_type, 0, index_sequence_type, Ts...>(
@@ -818,7 +826,7 @@ public:
 		{
 			if (newNumElements > oldNumCapacity)
 			{
-				const size_type newCapacity = max(GetNewCapacity(oldNumCapacity), newNumElements);
+				const size_type newCapacity = eastl::max(GetNewCapacity(oldNumCapacity), newNumElements);
 
 				void* ppNewLeaf[sizeof...(Ts)];
 				pair<void*, size_type> allocation = TupleRecurser<Ts...>::template DoAllocate<allocator_type, 0, index_sequence_type, Ts...>(
@@ -872,7 +880,7 @@ public:
 		{
 			if (newNumElements > oldNumCapacity)
 			{
-				const size_type newCapacity = max(GetNewCapacity(oldNumCapacity), newNumElements);
+				const size_type newCapacity = eastl::max(GetNewCapacity(oldNumCapacity), newNumElements);
 
 				void* ppNewLeaf[sizeof...(Ts)];
 				pair<void*, size_type> allocation = TupleRecurser<Ts...>::template DoAllocate<allocator_type, 0, index_sequence_type, Ts...>(
@@ -1123,45 +1131,49 @@ public:
 	
 	reference_tuple front() 
 	{
-#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
-	// We allow the user to reference an empty container.
-#elif EASTL_ASSERT_ENABLED
-		if (EASTL_UNLIKELY(mNumElements == 0)) // We don't allow the user to reference an empty container.
-			EASTL_FAIL_MSG("tuple_vector::front -- empty vector");
-#endif
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY(mNumElements == 0)) // We don't allow the user to reference an empty container.
+				EASTL_FAIL_MSG("tuple_vector::front -- empty vector");
+		#else
+			// We allow the user to reference an empty container.
+		#endif
+
 		return at(0); 
 	}
 
 	const_reference_tuple front() const
 	{
-#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
-	// We allow the user to reference an empty container.
-#elif EASTL_ASSERT_ENABLED
-		if (EASTL_UNLIKELY(mNumElements == 0)) // We don't allow the user to reference an empty container.
-			EASTL_FAIL_MSG("tuple_vector::front -- empty vector");
-#endif
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY(mNumElements == 0)) // We don't allow the user to reference an empty container.
+				EASTL_FAIL_MSG("tuple_vector::front -- empty vector");
+		#else
+			// We allow the user to reference an empty container.
+		#endif
+
 		return at(0); 
 	}
 	
 	reference_tuple back() 
 	{
-#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
-	// We allow the user to reference an empty container.
-#elif EASTL_ASSERT_ENABLED
-		if (EASTL_UNLIKELY(mNumElements == 0)) // We don't allow the user to reference an empty container.
-			EASTL_FAIL_MSG("tuple_vector::back -- empty vector");
-#endif
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY(mNumElements == 0)) // We don't allow the user to reference an empty container.
+				EASTL_FAIL_MSG("tuple_vector::back -- empty vector");
+		#else
+			// We allow the user to reference an empty container.
+		#endif
+
 		return at(size() - 1); 
 	}
 
 	const_reference_tuple back() const 
 	{
-#if EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
-	// We allow the user to reference an empty container.
-#elif EASTL_ASSERT_ENABLED
-		if (EASTL_UNLIKELY(mNumElements == 0)) // We don't allow the user to reference an empty container.
-			EASTL_FAIL_MSG("tuple_vector::back -- empty vector");
-#endif
+		#if EASTL_ASSERT_ENABLED && EASTL_EMPTY_REFERENCE_ASSERT_ENABLED
+			if (EASTL_UNLIKELY(mNumElements == 0)) // We don't allow the user to reference an empty container.
+				EASTL_FAIL_MSG("tuple_vector::back -- empty vector");
+		#else
+			// We allow the user to reference an empty container.
+		#endif
+
 		return at(size() - 1); 
 	}
 
@@ -1471,21 +1483,21 @@ template <typename AllocatorA, typename AllocatorB, typename Indices, typename..
 inline bool operator==(const TupleVecInternal::TupleVecImpl<AllocatorA, Indices, Ts...>& a,
 					   const TupleVecInternal::TupleVecImpl<AllocatorB, Indices, Ts...>& b)
 {
-	return ((a.size() == b.size()) && equal(a.begin(), a.end(), b.begin()));
+	return ((a.size() == b.size()) && eastl::equal(a.begin(), a.end(), b.begin()));
 }
 
 template <typename AllocatorA, typename AllocatorB, typename Indices, typename... Ts>
 inline bool operator!=(const TupleVecInternal::TupleVecImpl<AllocatorA, Indices, Ts...>& a,
 					   const TupleVecInternal::TupleVecImpl<AllocatorB, Indices, Ts...>& b)
 {
-	return ((a.size() != b.size()) || !equal(a.begin(), a.end(), b.begin()));
+	return ((a.size() != b.size()) || !eastl::equal(a.begin(), a.end(), b.begin()));
 }
 
 template <typename AllocatorA, typename AllocatorB, typename Indices, typename... Ts>
 inline bool operator<(const TupleVecInternal::TupleVecImpl<AllocatorA, Indices, Ts...>& a,
 					  const TupleVecInternal::TupleVecImpl<AllocatorB, Indices, Ts...>& b)
 {
-	return lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
+	return eastl::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
 }
 
 template <typename AllocatorA, typename AllocatorB, typename Indices, typename... Ts>

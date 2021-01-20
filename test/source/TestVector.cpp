@@ -144,9 +144,9 @@ public:
 
 struct TestMoveAssignToSelf
 {
-	TestMoveAssignToSelf() EA_NOEXCEPT : mMovedToSelf(false) {}
+	TestMoveAssignToSelf() EA_NOEXCEPT : mMovedToSelf(false)      {}
 	TestMoveAssignToSelf(const TestMoveAssignToSelf& other)       { mMovedToSelf = other.mMovedToSelf; }
-	TestMoveAssignToSelf& operator=(TestMoveAssignToSelf&& other) { mMovedToSelf = true; return *this; }
+	TestMoveAssignToSelf& operator=(TestMoveAssignToSelf&&)       { mMovedToSelf = true; return *this; }
 	TestMoveAssignToSelf& operator=(const TestMoveAssignToSelf&) = delete;
 
 	bool mMovedToSelf;
@@ -1445,9 +1445,9 @@ int TestVector()
 		// Regression for failure in DoRealloc's use of uninitialize_move.
 		using namespace eastl;
 
-		const eastl::string8 str0 = "TestString0";
-		vector<eastl::string8> v(1, str0);
-		vector<eastl::string8> v_copy;
+		const eastl::string str0 = "TestString0";
+		vector<eastl::string> v(1, str0);
+		vector<eastl::string> v_copy;
 
 		// Test operator=
 		v_copy = v;
@@ -1643,10 +1643,10 @@ int TestVector()
 				typedef int* pointer;
 				typedef int& reference;
 
-				bool operator!=(const iterator& rhs) const { return false; }
-				iterator& operator++()                     { return *this; }
-				iterator operator++(int)                   { return *this; }
-				container_value_type operator*()           { return {}; }
+				bool operator!=(const iterator&) const { return false; }
+				iterator& operator++()                 { return *this; }
+				iterator operator++(int)               { return *this; }
+				container_value_type operator*()       { return {};    }
 			};
 
 			container_with_custom_iterator() EA_NOEXCEPT {}
@@ -1711,6 +1711,28 @@ int TestVector()
 		// CustomAllocator has no data members which reduces the size of an eastl::vector via the empty base class optimization.
 		typedef eastl::vector<int, CustomAllocator> EboVector;
 		static_assert(sizeof(EboVector) == 3 * sizeof(void*), "");
+	}
+
+	// eastl::erase / eastl::erase_if tests
+	{
+		{
+			eastl::vector<int> v = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+			eastl::erase(v, 5);
+			VERIFY((v == eastl::vector<int> {1, 2, 3, 4, 6, 7, 8, 9}));
+
+			eastl::erase(v, 2);
+			VERIFY((v == eastl::vector<int> {1, 3, 4, 6, 7, 8, 9}));
+
+			eastl::erase(v, 9);
+			VERIFY((v == eastl::vector<int> {1, 3, 4, 6, 7, 8}));
+		}
+
+		{
+			eastl::vector<int> v = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+			eastl::erase_if(v, [](auto i) { return i % 2 == 0; });
+			VERIFY((v == eastl::vector<int>{1, 3, 5, 7, 9}));
+		}
 	}
 
 	return nErrorCount;

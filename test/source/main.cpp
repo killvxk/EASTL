@@ -18,13 +18,11 @@ EA_RESTORE_ALL_VC_WARNINGS()
 #include "EAMain/EAEntryPointMain.inl"
 #include "EASTLTestAllocator.h"
 
-
-
 ///////////////////////////////////////////////////////////////////////////////
 // Required by EASTL.
 //
 #if !EASTL_EASTDC_VSNPRINTF
-	int Vsnprintf8(char8_t* pDestination, size_t n, const char8_t*  pFormat, va_list arguments)
+	int Vsnprintf8(char* pDestination, size_t n, const char*  pFormat, va_list arguments)
 	{
 		return EA::StdC::Vsnprintf(pDestination, n, pFormat, arguments);
 	}
@@ -34,8 +32,13 @@ EA_RESTORE_ALL_VC_WARNINGS()
 		return EA::StdC::Vsnprintf(pDestination, n, pFormat, arguments);
 	}
 
-	#if (EASTDC_VERSION_N >= 10600)
-		int Vsnprintf32(char32_t* pDestination, size_t n, const char32_t* pFormat, va_list arguments)
+	int Vsnprintf32(char32_t* pDestination, size_t n, const char32_t* pFormat, va_list arguments)
+	{
+		return EA::StdC::Vsnprintf(pDestination, n, pFormat, arguments);
+	}
+
+	#if defined(EA_CHAR8_UNIQUE) && EA_CHAR8_UNIQUE
+		int Vsnprintf8(char8_t* pDestination, size_t n, const char8_t*  pFormat, va_list arguments)
 		{
 			return EA::StdC::Vsnprintf(pDestination, n, pFormat, arguments);
 		}
@@ -92,9 +95,9 @@ int EAMain(int argc, char* argv[])
 	testSuite.AddTest("Chrono",					TestChrono);
 	testSuite.AddTest("Deque",					TestDeque);
 	testSuite.AddTest("Extra",					TestExtra);
+	testSuite.AddTest("Finally",				TestFinally);
 	testSuite.AddTest("FixedFunction",			TestFixedFunction);
 	testSuite.AddTest("FixedHash",				TestFixedHash);
-	testSuite.AddTest("FixedHash",				TestStringHashMap);
 	testSuite.AddTest("FixedList",				TestFixedList);
 	testSuite.AddTest("FixedMap",				TestFixedMap);
 	testSuite.AddTest("FixedSList",				TestFixedSList);
@@ -110,6 +113,7 @@ int EAMain(int argc, char* argv[])
 	testSuite.AddTest("IntrusiveSDList",		TestIntrusiveSDList);
 	testSuite.AddTest("IntrusiveSList",			TestIntrusiveSList);
 	testSuite.AddTest("Iterator",				TestIterator);
+	testSuite.AddTest("LRUCache",				TestLruCache);
 	testSuite.AddTest("List",					TestList);
 	testSuite.AddTest("ListMap",				TestListMap);
 	testSuite.AddTest("Map",					TestMap);
@@ -126,8 +130,8 @@ int EAMain(int argc, char* argv[])
 	testSuite.AddTest("SmartPtr",				TestSmartPtr);
 	testSuite.AddTest("Sort",					TestSort);
 	testSuite.AddTest("Span",				    TestSpan);
-	testSuite.AddTest("SparseMatrix",			TestSparseMatrix);
 	testSuite.AddTest("String",					TestString);
+	testSuite.AddTest("StringHashMap",			TestStringHashMap);
 	testSuite.AddTest("StringMap",				TestStringMap);
 	testSuite.AddTest("StringView",			    TestStringView);
 	testSuite.AddTest("TestCppCXTypeTraits",	TestCppCXTypeTraits);
@@ -139,6 +143,9 @@ int EAMain(int argc, char* argv[])
 	testSuite.AddTest("Vector",					TestVector);
 	testSuite.AddTest("VectorMap",				TestVectorMap);
 	testSuite.AddTest("VectorSet",				TestVectorSet);
+	testSuite.AddTest("AtomicBasic",			TestAtomicBasic);
+	testSuite.AddTest("AtomicAsm",			    TestAtomicAsm);
+
 
 	nErrorCount += testSuite.Run();
 

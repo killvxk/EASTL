@@ -19,7 +19,7 @@ EA_DISABLE_ALL_VC_WARNINGS()
 	#include <stdexcept>
 	#include <new>
 #endif
-EA_RESTORE_VC_WARNING()
+EA_RESTORE_ALL_VC_WARNINGS();
 
 
 int TestAlgorithm();
@@ -33,6 +33,7 @@ int TestChrono();
 int TestCppCXTypeTraits();
 int TestDeque();
 int TestExtra();
+int TestFinally();
 int TestFixedFunction();
 int TestFixedHash();
 int TestFixedList();
@@ -52,6 +53,7 @@ int TestIntrusiveSList();
 int TestIterator();
 int TestList();
 int TestListMap();
+int TestLruCache();
 int TestMap();
 int TestMemory();
 int TestMeta();
@@ -66,19 +68,20 @@ int TestSet();
 int TestSmartPtr();
 int TestSort();
 int TestSpan();
-int TestSparseMatrix();
 int TestString();
 int TestStringHashMap();
 int TestStringMap();
 int TestStringView();
 int TestTuple();
+int TestTupleVector();
 int TestTypeTraits();
 int TestUtility();
 int TestVariant();
 int TestVector();
 int TestVectorMap();
 int TestVectorSet();
-int TestTupleVector();
+int TestAtomicBasic();
+int TestAtomicAsm();
 
 
 // Now enable warnings as desired.
@@ -116,8 +119,8 @@ int TestTupleVector();
 	#pragma warning(default: 4557)      // '__assume' contains effect 'effect'
   //#pragma warning(default: 4619)      // #pragma warning : there is no warning number 'number'
 	#pragma warning(default: 4623)      // 'derived class' : default constructor could not be generated because a base class default constructor is inaccessible
-	#pragma warning(default: 4625)      // 'derived class' : copy constructor could not be generated because a base class copy constructor is inaccessible
-	#pragma warning(default: 4626)      // 'derived class' : assignment operator could not be generated because a base class assignment operator is inaccessible
+  //#pragma warning(default: 4625)      // 'derived class' : copy constructor could not be generated because a base class copy constructor is inaccessible
+  //#pragma warning(default: 4626)      // 'derived class' : assignment operator could not be generated because a base class assignment operator is inaccessible
 	#pragma warning(default: 4628)      // Digraphs not supported with -Ze. Character sequence 'digraph' not interpreted as alternate token for 'char'
 	#pragma warning(default: 4640)      // 'instance' : construction of local static object is not thread-safe
 	#pragma warning(default: 4668)      // 'symbol' is not defined as a preprocessor macro, replacing with '0' for 'directives'
@@ -144,37 +147,6 @@ int TestTupleVector();
 //
 #include <EASTL/iterator.h>
 #include <EASTL/algorithm.h>
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-// EA_CHAR16
-//
-// EA_CHAR16 is defined in EABase 2.0.20 and later. If we are using an earlier
-// version of EABase then we replicate what EABase 2.0.20 does.
-//
-//
-#ifndef EA_WCHAR
-	 #define EA_WCHAR(s) L ## s
-#endif
-
-#ifndef EA_CHAR16
-	#if !defined(EA_CHAR16_NATIVE)
-		#if defined(_MSC_VER) && (_MSC_VER >= 1600) && defined(_HAS_CHAR16_T_LANGUAGE_SUPPORT) // VS2010+
-			#define EA_CHAR16_NATIVE 1
-		#elif defined(__GNUC__) && ((__GNUC__ * 100 + __GNUC_MINOR__) >= 404) && (defined(__GXX_EXPERIMENTAL_CXX0X__) || defined(__STDC_VERSION__)) // g++ (C++ compiler) 4.4+ with -std=c++0x or gcc (C compiler) 4.4+ with -std=gnu99
-			#define EA_CHAR16_NATIVE 1
-		#else
-			#define EA_CHAR16_NATIVE 0
-		#endif
-	#endif
-
-	#if EA_CHAR16_NATIVE && !defined(_MSC_VER) // Microsoft doesn't support char16_t string literals.
-		#define EA_CHAR16(s) u ## s
-	#elif (EA_WCHAR_SIZE == 2)
-		#define EA_CHAR16(s) L ## s
-	#endif
-#endif
 
 
 
@@ -1099,7 +1071,7 @@ public:
 	MallocAllocator(const MallocAllocator& x)
 		: mAllocCount(x.mAllocCount), mFreeCount(x.mFreeCount), mAllocVolume(x.mAllocVolume) {}
 
-	MallocAllocator(const MallocAllocator&, const char*) {}
+	MallocAllocator(const MallocAllocator& x, const char*) : MallocAllocator(x) {}
 
 	MallocAllocator& operator=(const MallocAllocator& x)
 	{
